@@ -1,14 +1,28 @@
+-- oscgrid touch osc grid
+-- emulator by Steven Noreyko
+-- ipad at 192.168.1.148 
+
+
 local vport = require 'vport'
 
 local oscgrid = {}
 oscgrid.__index = oscgrid
 
+oscgrid.LEDarray = {}          -- create the matrix
+  for i=1,16 do
+    oscgrid.LEDarray[i] = {}     -- create a new row
+    for j=1,8 do
+      oscgrid.LEDarray[i][j] = 0
+    end
+  end    
+--print ('ledarray 16 16', oscgrid.LEDarray[16][16])
+
+
 oscgrid.devices = {}
 oscgrid.vports = {}
 oscgrid.gridkey = {}
 
-oscgrid.oscdest = {"10.0.1.12",9000}
-    
+oscgrid.oscdest = {"192.168.1.148",9000}
 
 for i=1,4 do
   oscgrid.vports[i] = {
@@ -63,7 +77,11 @@ end
 -- @tparam integer y : row index (1-based!)
 -- @tparam integer val : LED brightness in [0, 15]
 function oscgrid:led(x, y, val)
+-- print ("ex,why,val,LEDarray",x,y,val, oscgrid.LEDarray[3][3])
+--  if oscgrid.LEDarray[x][y] ~= val then
+--    oscgrid.LEDarray[x][y] = val
     osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
+--    end
   --grid_set_led(self.dev, x, y, val)
 end
 
@@ -72,7 +90,11 @@ end
 function oscgrid:all(val)
   for i = 1,16 do
     for j = 1,8 do
-      osc.send(oscgrid.oscdest, "/grid/led ".. i .. " " .. j, {val})
+--      if oscgrid.LEDarray[i][j] ~= val then
+--        oscgrid.LEDarray[i][j] = val
+        osc.send(oscgrid.oscdest, "/grid/led ".. i .. " " .. j, {val})
+--      return
+--      end
     end
   end  
   --grid_all_led(self.dev, val)
@@ -133,18 +155,21 @@ oscgrid.osc_in = function(path, args, from)
   for k in string.gmatch(path, "%S+") do
     table.insert(pathxy,k)
   end
-  oscpath = pathxy[1]
-  x = math.floor(pathxy[2])
-  y = math.floor(pathxy[3])
-  s = math.floor(args[1])
-  if oscpath == "/grid/key" then
-    oscgrid.gridkey = {x, y, s}
-    oscgrid.grid.key(2, x, y, s)
-    --osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
-    --osc.send(oscgrid.oscdest, path, args) 
-    --oscgrid.draw(x .. ' ' .. y .. ' ' .. s)
+  if string.match(path,"/z") ~= "/z" then
+    print(path, pathxy[2], pathxy[3])
+    oscpath = pathxy[1]
+    x = math.floor(pathxy[2])
+    y = math.floor(pathxy[3])
+    s = math.floor(args[1])
+    if oscpath == "/grid/key" then
+      oscgrid.gridkey = {x, y, s}
+      oscgrid.grid.key(2, x, y, s)
+      --osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
+      --osc.send(oscgrid.oscdest, path, args) 
+      --oscgrid.draw(x .. ' ' .. y .. ' ' .. s)
 
   end
+end
 end
 
 osc.event = oscgrid.osc_in
