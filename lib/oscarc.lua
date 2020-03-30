@@ -3,10 +3,21 @@ local vport = require 'vport'
 local oscarc = {}
 oscarc.__index = oscarc
 
+local oscsourceip = "10.0.1.11"
+local oscsourceport = 9000
+
 oscarc.devices = {}
 oscarc.vports = {}
 
-oscarc.oscdest = {"10.0.1.12",9000}
+oscarc.oscdest = {oscsourceip,oscsourceport}
+
+oscarc.arcLEDarray = {}          -- create the matrix
+  for i=1,4 do  -- ring
+    oscarc.arcLEDarray[i] = {}     -- create a new row
+    for j=1,64 do  -- leds
+      oscarc.arcLEDarray[i][j] = 0
+    end
+  end  
     
 
 for i=1,4 do
@@ -23,6 +34,7 @@ for i=1,4 do
     segment = vport.wrap_method('segment'),
   }
 end
+
 
 function oscarc.new(id, serial, name)
   local device = setmetatable({}, oscarc)
@@ -57,25 +69,48 @@ end
 -- @tparam integer x : led index (1-based!)
 -- @tparam integer val : LED brightness in [0, 15]
 function oscarc:led(ring, x, val)
-  osc.send(oscarc.oscdest, "/ring/led ".. ring .. " " .. x, {val})
+  oscarc.arcLEDarray[ring][x] = val
+  --osc.send(oscarc.oscdest, "/ring/led ".. ring .. " " .. x, {val})
   --arc_set_led(self.dev, ring, x, val)
 end
 
 --- set state of all LEDs on this arc device.
 -- @tparam integer val : LED brightness in [0, 15]
 function oscarc:all(val)
-  for i = 1,4 do
-    for j = 1,64 do
-      osc.send(oscarc.oscdest, "/ring/led ".. i .. " " .. j, {val})
+  for i = 1,4 do -- ring
+    for j = 1,64 do -- leds
+      oscarc.arcLEDarray[i][j] = val
+      --osc.send(oscarc.oscdest, "/ring/led ".. i .. " " .. j, {val})
     end
   end  
   --arc_all_led(self.dev, val)
 end
 
---- update any dirty quads on this grid device.
+--- update any dirty quads on this arc device.
 function oscarc:refresh()
+  for i = 1,4 do -- ring
+    for j = 1,64 do -- leds
+      osc.send(oscarc.oscdest, "/ring/led ".. i .. " " .. j, {oscarc.arcLEDarray[i][j]})
+    end
+  end  
+
   --monome_refresh(self.dev)
 end
+
+--- static callback when any arc device is added;
+-- user scripts can redefine
+-- @static
+-- @param dev : an arc table
+function oscarc.add(dev)
+  print("arc added:", dev.id, dev.name, dev.serial)
+end
+
+--- static callback when any arc device is removed;
+-- user scripts can redefine
+-- @static
+-- @param dev : an arc table
+function oscarc.remove(dev) end
+
 
 --- create an anti-aliased point to point arc 
 -- segment/range on a sepcific LED ring.
@@ -120,10 +155,86 @@ function oscarc:segment(ring, from, to, level)
 end
 
 
+
+local t = 0
+local dt = 1
+local newdelta = 0
+
+oscarc.osc_in = function(path, args, from)
+  local k
+  local pathxy = {}
+  for k in string.gmatch(path, "%S+") do
+    table.insert(pathxy,k)
+  end
+  --print (path)
+  oscpath = pathxy[1]
+  if oscpath == "/arc/enc" then
+    n = math.floor(pathxy[2])
+    delta = math.floor(args[1])
+    
+    -- collect fast deltas for quick spins
+    local t1 = util.time()
+    dt = t1 - t
+    t = t1
+    newdelta = newdelta + delta
+    if dt > .025 then
+      oscarc.arc.delta(1, n, newdelta)
+      --print (newdelta)
+      newdelta = 0
+    end
+    --oscarc.draw(n .. ' ' .. delta)
+  end
+end
+
+osc.event = oscarc.osc_in
+
+oscarc.arc = {}
+
+
+oscarc.arc.delta = function(id, n, delta)
+  local device = arc.devices[id]
+
+  if device ~= nil then
+    if device.delta then
+      device.delta(n, delta)
+      _norns.arc.delta(id, n, delta)
+    end
+
+    if device.port then
+      if oscarc.vports[device.port].delta then
+        oscarc.vports[device.port].delta(n, delta)
+      end
+    end
+  else
+    error('no entry for arc '..id)
+  end
+end
+
+
+oscarc.arc.key = function(id, n, s)
+  local device = Arc.devices[id]
+
+  if device ~= nil then
+    if device.key then
+      device.key(n, s)
+      _norns.arc.key(id, n, s)
+    end
+
+    if device.port then
+      if Arc.vports[device.port].key then
+        Arc.vports[device.port].key(n, s)
+      end
+    end
+  else
+    error('no entry for arc '..id)
+  end
+end
+
+
 function oscarc.connect(n)
   local n = n or 1
-
   return arc.vports[n]
+  
 end
 --- clear handlers
 function oscarc.cleanup()
@@ -142,6 +253,7 @@ end
 
 function oscarc.update_devices()
   -- reset vports for existing devices
+  --oscarc.list = {}
   for _, device in pairs(arc.devices) do
     device.port = nil
   end
@@ -160,44 +272,25 @@ function oscarc.update_devices()
 end
 
 
-oscarc.osc_in = function(path, args, from)
-  local k
-  local pathxy = {}
-  for k in string.gmatch(path, "%S+") do
-    table.insert(pathxy,k)
-  end
-  oscpath = pathxy[1]
-  n = math.floor(pathxy[2])
-  delta = math.floor(args[1])
-  if oscpath == "/arc/enc" then
-    oscarc.arc.delta(1, n, delta)
-    --osc.send(oscarc.oscdest, "/grid/led ".. x .. " " .. y, {val})
-    --osc.send(oscarc.oscdest, path, args) 
-    --oscarc.draw(x .. ' ' .. y .. ' ' .. s)
-
-  end
-end
-
-osc.event = oscarc.osc_in
-
-oscarc.arc = {}
-
-
-oscarc.arc.delta = function(id, n, delta)
-  norns.arc.delta(id, n, delta)
-end
-
-oscarc.arc.key = function(id, n, s)
-  norns.arc.key(id, n, s)
-end
-
-
 -- arc add
 oscarc.arc.add = function(id, serial, name)
   local g = oscarc.new(id, serial, name)
   arc.devices[id] = g
   oscarc.update_devices()
-  --if oscarc.arc.add ~= nil then oscarc.arc.add(g) end
+  if oscarc.add ~= nil then oscarc.add(g) end
+end
+
+oscarc.arc.remove = function(id)
+  if arc.devices[id] then
+    if arc.remove ~= nil then
+      arc.remove(arc.devices[id])
+    end
+    if arc.devices[id].remove then
+      arc.devices[id].remove()
+    end
+  end
+  arc.devices[id] = nil
+  arc.update_devices()
 end
 
 
@@ -209,7 +302,5 @@ oscarc.draw = function(text)
   screen.update()
 end
 
-
-oscarc.arc.add(1, "m12345", "oscarc")
 
 return oscarc
