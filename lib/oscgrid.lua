@@ -129,7 +129,6 @@ end
 function oscgrid.remove(dev) end
 
 
-
 oscgrid.osc_in = function(path, args, from)
   local k
   local pathxy = {}
