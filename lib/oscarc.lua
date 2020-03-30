@@ -186,10 +186,7 @@ oscarc.osc_in = function(path, args, from)
   end
 end
 
-osc.event = oscarc.osc_in
-
 oscarc.arc = {}
-
 
 oscarc.arc.delta = function(id, n, delta)
   local device = arc.devices[id]

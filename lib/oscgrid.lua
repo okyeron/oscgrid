@@ -152,7 +152,6 @@ oscgrid.osc_in = function(path, args, from)
   end
 end
 
-osc.event = oscgrid.osc_in
 oscgrid.grid = {}
 
 oscgrid.grid.key = function(id, x, y, s)

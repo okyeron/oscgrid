@@ -12,15 +12,12 @@ local grds = {}
 local g
 local grid_w
 local grid_h
-local ar
 
 function init()
   connect()
   get_grid_names()
-
   --tab.print(grds[1])
   --tab.print(grid.vports[1].device)
-  
   screen.aa(0)
   redraw()
 end
@@ -42,19 +39,9 @@ function connect()
   grid_h = g.rows
   --g:rotation(0)
   
-  arc.update_devices()
-  ar = include('lib/oscarc')
-  ar.arc.add(1, "m54321", "oscarc", {})
-  ar.delta = oscarc_delta
+  osc.event = g.osc_in
 
   --print ("cols/rows", grid_w, grid_h)
-
-end
-
-function key(n,z)
-  if n==2 and z==1 then
-     redraw()
-  end
 end
 
 
@@ -72,16 +59,12 @@ function oscgrid_key(x, y, s)
   --print (x .. ' ' .. y .. ' ' .. s)
 end
 
-function oscarc_delta(n, delta)
-  --print (n , delta)
-  
-end
 
 function redraw()
   screen.clear()
   screen.level(15)
   screen.move (0,10)
-  screen.text('oscgrid/oscarc loaded')
+  screen.text('oscgrid loaded')
   
   screen.update()
 end
