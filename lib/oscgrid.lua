@@ -12,7 +12,8 @@ oscgrid.LEDarray = {}          -- create the matrix
     for j=1,8 do
       oscgrid.LEDarray[i][j] = 0
     end
-  end    
+  end  
+--tab.print (oscgrid.LEDarray)
 --print ('ledarray 16 16', oscgrid.LEDarray[16][16])
 
 
@@ -82,8 +83,11 @@ end
 -- @tparam integer y : row index (1-based!)
 -- @tparam integer val : LED brightness in [0, 15]
 function oscgrid:led(x, y, val)
-    osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
-  --grid_set_led(self.dev, x, y, val)
+    -- this should load up array and then refresh sends the values
+    --osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
+    --grid_set_led(self.dev, x, y, val)
+    oscgrid.LEDarray[x][y] = val
+    --print("led",self.LEDarray[x][y])
 end
 
 --- set state of all LEDs on this grid device.
@@ -91,11 +95,24 @@ end
 function oscgrid:all(val)
   for i = 1,16 do -- should maybe use g.cols
     for j = 1,8 do -- should maybe use g.rows
-      osc.send(oscgrid.oscdest, "/grid/led ".. i .. " " .. j, {val})
+      oscgrid.LEDarray[i][j] = val
+      --osc.send(oscgrid.oscdest, "/grid/led ".. i .. " " .. j, {val})
     end
   end  
   --grid_all_led(self.dev, val)
 end
+
+--- update any dirty quads on this grid device.
+function oscgrid:refresh()
+  for i = 1,16 do -- should maybe use g.cols
+    for j = 1,8 do -- should maybe use g.rows
+      osc.send(self.oscdest, "/grid/led ".. i .. " " .. j, {oscgrid.LEDarray[i][j]})
+    end
+  end  
+  --monome_refresh(self.dev)
+end
+
+
 
 --- static callback when any grid device is added;
 -- user scripts can redefine
@@ -111,11 +128,6 @@ end
 -- @param dev : a Grid table
 function oscgrid.remove(dev) end
 
---- update any dirty quads on this grid device.
-function oscgrid:refresh()
-  --monome_refresh(self.dev)
-end
-
 
 
 oscgrid.osc_in = function(path, args, from)
@@ -126,12 +138,13 @@ oscgrid.osc_in = function(path, args, from)
   end
   --print (path)
   oscpath = pathxy[1]
-  x = math.floor(pathxy[2])
-  y = math.floor(pathxy[3])
-  s = math.floor(args[1])
   if oscpath == "/grid/key" then
+    x = math.floor(pathxy[2])
+    y = math.floor(pathxy[3])
+    s = math.floor(args[1])
     oscgrid.gridkey = {x, y, s}
     oscgrid.grid.key(2, x, y, s)
+    
     --osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
     --osc.send(oscgrid.oscdest, path, args) 
     --oscgrid.draw(x .. ' ' .. y .. ' ' .. s)
@@ -144,9 +157,12 @@ oscgrid.grid = {}
 
 oscgrid.grid.key = function(id, x, y, s)
   local g = grid.devices[id]
+  --tab.print(g)
   if g ~= nil then
     if g.key ~= nil then
       g.key(x, y, s)
+      _norns.grid.key(id, x,y,s)
+      --print (x, y, s)
     end
 
     if g.port then

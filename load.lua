@@ -1,5 +1,5 @@
--- oscgrid loader
--- run this to load oscgrid into memory
+-- oscgrid/oscarc loader
+-- run this to load oscgrid and oscarc into memory
 
 -- you can also use this directly in another script
 -- replace grid.connect() with include('lib/oscgrid') 
@@ -12,9 +12,10 @@ local grds = {}
 local g
 local grid_w
 local grid_h
+local ar
 
 function init()
-  disconnect()
+  connect()
   get_grid_names()
 
   --tab.print(grds[1])
@@ -32,17 +33,21 @@ function get_grid_names()
   end
 end
 
-function disconnect()
+function connect()
   grid.update_devices()
   g = include('lib/oscgrid')
-
-  g.grid.remove(2)
-  g.cleanup()
-
+  g.grid.add(2, "m12345", "oscgrid", {})
+  g.key = oscgrid_key
+  grid_w = g.cols
+  grid_h = g.rows
+  --g:rotation(0)
+  
   arc.update_devices()
   ar = include('lib/oscarc')
-  ar.arc.remove(1)
-  ar.cleanup()
+  ar.arc.add(1, "m54321", "oscarc", {})
+  ar.delta = oscarc_delta
+
+  --print ("cols/rows", grid_w, grid_h)
 
 end
 
@@ -53,23 +58,30 @@ function key(n,z)
 end
 
 
-function grid_key(x, y, s)
+function oscgrid_key(x, y, s)
   if s == 1 then
     --print('keyon')
     --g:led(x,y,15)
+    --g:refresh()
+
   else
     --print('keyoff')
     --g:led(x,y,0)
+    --g:refresh()
   end
   --print (x .. ' ' .. y .. ' ' .. s)
- end
+end
 
+function oscarc_delta(n, delta)
+  --print (n , delta)
+  
+end
 
 function redraw()
   screen.clear()
   screen.level(15)
   screen.move (0,10)
-  screen.text('oscgrid unloaded')
+  screen.text('oscgrid/oscarc loaded')
   
   screen.update()
 end
