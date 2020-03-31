@@ -86,7 +86,9 @@ function oscgrid:led(x, y, val)
     -- this should load up array and then refresh sends the values
     --osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
     --grid_set_led(self.dev, x, y, val)
-    oscgrid.LEDarray[x][y] = val
+    if (x > 0 and x < 17) and (y > 0 and y < 9) then
+      oscgrid.LEDarray[x][y] = util.clamp(val,0,15)
+    end
     --print("led",self.LEDarray[x][y])
 end
 

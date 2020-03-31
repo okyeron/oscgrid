@@ -69,7 +69,7 @@ end
 -- @tparam integer x : led index (1-based!)
 -- @tparam integer val : LED brightness in [0, 15]
 function oscarc:led(ring, x, val)
-  oscarc.arcLEDarray[ring][x] = val
+  oscarc.arcLEDarray[ring][x] = util.clamp(val,0,15)
   --osc.send(oscarc.oscdest, "/ring/led ".. ring .. " " .. x, {val})
   --arc_set_led(self.dev, ring, x, val)
 end
