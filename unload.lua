@@ -1,12 +1,6 @@
--- oscgrid loader
--- run this to load oscgrid into memory
+-- oscgrid un-loader
+-- run this to unload oscgrid from memory
 
--- you can also use this directly in another script
--- replace grid.connect() with include('lib/oscgrid') 
--- and you're off to the races
-
--- g = grid.connect()
--- local g = include('lib/oscgrid')
 
 local grds = {}
 local g
@@ -41,7 +35,7 @@ function disconnect()
 
   arc.update_devices()
   ar = include('lib/oscarc')
-  ar.arc.remove(1)
+  ar.arc.remove(2)
   ar.cleanup()
 
 end
