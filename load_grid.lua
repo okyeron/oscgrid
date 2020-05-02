@@ -8,6 +8,10 @@
 -- g = grid.connect()
 -- local g = include('lib/oscgrid')
 
+local touchoscsourceip = "10.0.1.11"
+local touchoscsourceport = 9000
+
+
 local grds = {}
 local g
 local grid_w
@@ -33,13 +37,18 @@ end
 function connect()
   grid.update_devices()
   g = include('lib/oscgrid')
-  g.grid.add(2, "m12345", "oscgrid", {})
+  local g_id = 2
+  g.grid.add(g_id, "m12345", "oscgrid", {})
   g.key = oscgrid_key
   grid_w = g.cols
   grid_h = g.rows
   --g:rotation(0)
   
-  osc.event = g.osc_in
+  g.oscdest = {touchoscsourceip,touchoscsourceport}
+  
+  osc.event = function(path, args, from)
+    g.osc_in(path, args, from, g_id)
+  end
 
   --print ("cols/rows", grid_w, grid_h)
 end

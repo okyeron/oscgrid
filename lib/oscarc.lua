@@ -160,7 +160,7 @@ local t = 0
 local dt = 1
 local newdelta = 0
 
-oscarc.osc_in = function(path, args, from)
+oscarc.osc_in = function(path, args, from, ar_id)
   local k
   local pathxy = {}
   for k in string.gmatch(path, "%S+") do
@@ -178,7 +178,7 @@ oscarc.osc_in = function(path, args, from)
     t = t1
     newdelta = newdelta + delta
     if dt > .025 then
-      oscarc.arc.delta(1, n, newdelta)
+      oscarc.arc.delta(ar_id, n, newdelta)
       --print (newdelta)
       newdelta = 0
     end

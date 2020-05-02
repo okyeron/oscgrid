@@ -8,6 +8,9 @@
 -- ar = arc.connect()
 -- local ar = include('lib/oscarc')
 
+local touchoscsourceip = "10.0.1.11"
+local touchoscsourceport = 9000
+
 local ar
 
 function init()
@@ -22,9 +25,12 @@ function connect()
 
   arc.update_devices()
   ar = include('lib/oscarc')
-  ar.arc.add(1, "m54321", "oscarc", {})
+  local ar_id = 2
+  ar.arc.add(ar_id, "m54321", "oscarc", {})
   ar.delta = oscarc_delta
 
+  ar.oscdest = {touchoscsourceip,touchoscsourceport}
+  
   osc.event = ar.osc_in
 end
 

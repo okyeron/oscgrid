@@ -8,6 +8,9 @@
 -- g = grid.connect()
 -- local g = include('lib/oscgrid')
 
+local touchoscsourceip = "10.0.1.11"
+local touchoscsourceport = 9000
+
 local grds = {}
 local g
 local grid_w
@@ -35,7 +38,8 @@ end
 function connect()
   grid.update_devices()
   g = include('lib/oscgrid')
-  g.grid.add(2, "m12345", "oscgrid", {})
+  local g_id = 2
+  g.grid.add(g_id, "m12345", "oscgrid", {})
   g.key = oscgrid_key
   grid_w = g.cols
   grid_h = g.rows
@@ -43,15 +47,16 @@ function connect()
   
   arc.update_devices()
   ar = include('lib/oscarc')
-  ar.arc.add(1, "m54321", "oscarc", {})
+  local ar_id = 2
+  ar.arc.add(ar_id, "m54321", "oscarc", {})
   ar.delta = oscarc_delta
 
-  g.oscdest = {"10.0.1.11",9000}
-  ar.oscdest = {"10.0.1.11",9000}  
+  g.oscdest = {touchoscsourceip,touchoscsourceport}
+  ar.oscdest = {touchoscsourceip,touchoscsourceport}
 
   osc.event = function(path, args, from)
-    g.osc_in(path, args, from)
-    ar.osc_in(path, args, from)
+    g.osc_in(path, args, from, g_id)
+    ar.osc_in(path, args, from, ar_id)
   end
   
   --print ("cols/rows", grid_w, grid_h)

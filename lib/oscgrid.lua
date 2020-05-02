@@ -131,20 +131,20 @@ end
 function oscgrid.remove(dev) end
 
 
-oscgrid.osc_in = function(path, args, from)
+oscgrid.osc_in = function(path, args, from, g_id)
   local k
   local pathxy = {}
   for k in string.gmatch(path, "%S+") do
     table.insert(pathxy,k)
   end
-  --print (path)
+  --print (pathxy[1], pathxy[2], pathxy[3], math.floor(args[1]), g_id)
   oscpath = pathxy[1]
   if oscpath == "/grid/key" then
     x = math.floor(pathxy[2])
     y = math.floor(pathxy[3])
     s = math.floor(args[1])
     oscgrid.gridkey = {x, y, s}
-    oscgrid.grid.key(2, x, y, s)
+    oscgrid.grid.key(g_id, x, y, s)
     
     --osc.send(oscgrid.oscdest, "/grid/led ".. x .. " " .. y, {val})
     --osc.send(oscgrid.oscdest, path, args) 
@@ -159,6 +159,7 @@ oscgrid.grid.key = function(id, x, y, s)
   local g = grid.devices[id]
   --tab.print(g)
   if g ~= nil then
+    --print (g.key)
     if g.key ~= nil then
       g.key(x, y, s)
       _norns.grid.key(id, x,y,s)
